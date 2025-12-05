@@ -1,17 +1,17 @@
 #!/bin/bash
-# EPrints OAI Harvest Script
+
 source "$(dirname "$0")/../common/sharedlibraries/harvester-common.sh"
 
 # Setup
-setup_environment "EPrints-OAI-fetch"
+setup_environment "OpenAlex-Harvest"
 setup_logging
 clean_data
 
 # Fetch phase
-execute_fetch "org.vivoweb.harvester.fetch.OAIFetch" "eprints-oaifetch.conf.xml"
+execute_fetch "harvester-jsonfetch" "openalex-jsonfetch.config.xml"
 
 # Process phase
-execute_translate "xsltranslator.config.xml"
+execute_translate
 execute_transfer
 
 # Update phase
@@ -21,4 +21,4 @@ apply_changes_to_vivo
 
 # Report
 count_imports
-echo "EPrints OAI harvest completed successfully"
+echo "OpenAlex harvest completed successfully"
