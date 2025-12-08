@@ -6,7 +6,7 @@
 -->
 
 <Config>
-    <Param name="jena">score-data.model.xml</Param>
+    <Param name="jena">../common/score/score-data.model.xml</Param>
     <Param name="truncate">true</Param>
     <Param name="wordiness">INFO</Param> 
 </Config>

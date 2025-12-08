@@ -9,13 +9,13 @@
 	input-config - relative path to the configuration file for the Jena model containing the data to
 	               potentially rename.
 	-->
-	<Param name="input-config">harvested-data.model.xml</Param>
+	<Param name="input-config">../common/harvestertransfer/harvested-data.model.xml</Param>
 	
 	<!--
 	score-config - relative path to the configuration file for the Jena model containing the data provided by
 	               Score to be analyzed for a match.
 	-->
-	<Param name="score-config">score-data.model.xml</Param>
+	<Param name="score-config">../common/score/score-data.model.xml</Param>
 	
 	<!--
 	rename - true if we want to perform an in-place rename on all matches.

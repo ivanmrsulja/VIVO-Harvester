@@ -9,17 +9,17 @@
 	inputJena-config - relative path to the configuration file of the Jena model containing the data to be compared with
 	                   data in VIVO.
 	-->
-	<Param name="inputJena-config">harvested-data.model.xml</Param>
+	<Param name="inputJena-config">../common/harvestertransfer/harvested-data.model.xml</Param>
 
 	<!--
 	vivoJena-config - relative path to the configuration file of the Jena model containing the VIVO data.
 	-->
-	<Param name="vivoJena-config">vivo.model.xml</Param>
+	<Param name="vivoJena-config">../common/modelupdate/vivo.model.xml</Param>
 
 	<!--
 	score-config - relative path to the configuration file of the Jena model in which Score will place its output.
 	-->
-	<Param name="score-config">score-data.model.xml</Param>
+	<Param name="score-config">../common/score/score-data.model.xml</Param>
 	
 	<!--
 	algorithms - the Java class of the scoring algorithm to use for this comparison.  Must be preceded by "<identifier>=", where

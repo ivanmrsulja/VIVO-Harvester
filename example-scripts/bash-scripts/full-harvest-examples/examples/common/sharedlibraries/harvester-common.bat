@@ -1,238 +1,210 @@
 @echo off
-REM ====================================================================
-REM VIVO Harvester Common Functions for Windows Batch Scripts
-REM Copyright (c) 2010-2025 VIVO Harvester Team
-REM ====================================================================
 
-REM Function: Initialize environment
+REM ============================================================
+REM FUNCTION DISPATCHER
+REM ============================================================
+set "FUNC=%~1"
+shift
+
+if "%FUNC%"=="validate_load_method"          goto :validate_load_method
+if "%FUNC%"=="init_environment"              goto :init_environment
+if "%FUNC%"=="setup_logging"                 goto :setup_logging
+if "%FUNC%"=="clean_data"                    goto :clean_data
+if "%FUNC%"=="execute_fetch"                 goto :execute_fetch
+if "%FUNC%"=="execute_translate"             goto :execute_translate
+if "%FUNC%"=="execute_transfer"              goto :execute_transfer
+if "%FUNC%"=="perform_diff"                  goto :perform_diff
+if "%FUNC%"=="apply_changes_to_previous"     goto :apply_changes_to_previous
+if "%FUNC%"=="apply_changes_to_vivo"         goto :apply_changes_to_vivo
+
+echo ERROR: Unknown function "%FUNC%"
+exit /b 1
+
+
+REM ============================================================
+:validate_load_method
+REM %1 = load method argument
+set "INPUT=%~1"
+
+if "%INPUT%"=="" (
+    set "LOAD_METHOD=sparql"
+    exit /b 0
+)
+
+if /I "%INPUT%"=="tdb" (
+    set "LOAD_METHOD=tdb"
+    exit /b 0
+)
+
+if /I "%INPUT%"=="sparql" (
+    set "LOAD_METHOD=sparql"
+    exit /b 0
+)
+
+echo Invalid argument: %INPUT%
+exit /b 1
+
+
+REM ============================================================
 :init_environment
-REM Parameters: %1=Harvest Name, %2=Harvester Install Dir (optional)
-setlocal
+REM %1 = harvest name
 set "HARVEST_NAME=%~1"
-if "%~2"=="" (
-    set "HARVESTER_INSTALL_DIR=%cd%\..\..\..\..\..\..\VIVO-Harvester"
-) else (
-    set "HARVESTER_INSTALL_DIR=%~2"
-)
 
-REM Get current date in ISO format
-for /f "tokens=1-3 delims=/ " %%a in ("%date%") do (
-    set YEAR=%%c
-    set MONTH=%%a
-    set DAY=%%b
-)
-if %MONTH% LSS 10 set MONTH=0%MONTH%
-if %DAY% LSS 10 set DAY=0%DAY%
+for /f "tokens=2 delims==" %%i in ('wmic os get localdatetime /value') do set dt=%%i
 
-for /f "tokens=1-3 delims=:." %%a in ("%time%") do (
-    set HOUR=%%a
-    set MINUTE=%%b
-    set SECOND=%%c
-)
-if %HOUR% LSS 10 set HOUR=0%HOUR%
-if %MINUTE% LSS 10 set MINUTE=0%MINUTE%
-if %SECOND% LSS 10 set SECOND=0%SECOND%
+set YEAR=%dt:~0,4%
+set MONTH=%dt:~4,2%
+set DAY=%dt:~6,2%
+set HOUR=%dt:~8,2%
+set MINUTE=%dt:~10,2%
+set SECOND=%dt:~12,2%
 
 set "DATE=%YEAR%-%MONTH%-%DAY%T%HOUR%:%MINUTE%:%SECOND%"
 
-REM Setup paths
+set "HARVESTER_INSTALL_DIR=%cd%\..\..\..\..\..\..\VIVO-Harvester"
 set "PATH=%PATH%;%HARVESTER_INSTALL_DIR%\bin"
-set "CLASSPATH=%CLASSPATH%;%HARVESTER_INSTALL_DIR%\bin\harvester.jar;%HARVESTER_INSTALL_DIR%\bin\dependency\*"
-set "CLASSPATH=%CLASSPATH%;%HARVESTER_INSTALL_DIR%\build\harvester.jar;%HARVESTER_INSTALL_DIR%\build\dependency\*"
-
-REM Java options
+set "CLASSPATH=%HARVESTER_INSTALL_DIR%\bin\harvester.jar;%HARVESTER_INSTALL_DIR%\bin\dependency\*;%HARVESTER_INSTALL_DIR%\build\harvester.jar;%HARVESTER_INSTALL_DIR%\build\dependency\*"
 set "HARVESTER_JAVA_OPTS=-Xms1024M -Xmx2048M"
 
-endlocal & (
-    set "HARVEST_NAME=%HARVEST_NAME%"
-    set "HARVESTER_INSTALL_DIR=%HARVESTER_INSTALL_DIR%"
-    set "DATE=%DATE%"
-    set "CLASSPATH=%CLASSPATH%"
-    set "PATH=%PATH%"
-    set "HARVESTER_JAVA_OPTS=%HARVESTER_JAVA_OPTS%"
-)
-goto :eof
+exit /b 0
 
-REM Function: Setup logging
+
+REM ============================================================
 :setup_logging
-setlocal
 if not exist logs mkdir logs
-cd logs
-echo. > %HARVEST_NAME%.%DATE%.log
-del %HARVEST_NAME%.latest.log 2>nul
-copy %HARVEST_NAME%.%DATE%.log %HARVEST_NAME%.latest.log >nul 2>&1
-cd ..
-echo Full Logging in %HARVEST_NAME%.%DATE%.log
-goto :eof
+pushd logs
+echo. > "%HARVEST_NAME%.%DATE%.log"
+del "%HARVEST_NAME%.latest.log" 2>nul
+copy "%HARVEST_NAME%.%DATE%.log" "%HARVEST_NAME%.latest.log" >nul
+popd
+exit /b 0
 
-REM Function: Clean old data
+
+REM ============================================================
 :clean_data
 if exist data rmdir /s /q data
-goto :eof
+exit /b 0
 
-REM Function: Execute fetch operation
+
+REM ============================================================
 :execute_fetch
-REM Parameters: %1=Fetch class name, %2=Config file
-setlocal
 set "FETCH_CLASS=%~1"
 set "CONFIG_FILE=%~2"
 
-echo Executing fetch: %FETCH_CLASS%
 if not exist "%CONFIG_FILE%" (
-    echo ERROR: Missing configuration file: %CONFIG_FILE%
+    echo Missing config file: %CONFIG_FILE%
     exit /b 1
 )
 
 java %HARVESTER_JAVA_OPTS% -cp "%CLASSPATH%" %FETCH_CLASS% -X "%CONFIG_FILE%"
-if %errorlevel% neq 0 exit /b %errorlevel%
-endlocal
-goto :eof
+exit /b %errorlevel%
 
-REM Function: Execute translate operation
+
+REM ============================================================
 :execute_translate
-REM Parameters: %1=Config file (optional)
-setlocal
-if "%~1"=="" (
-    set "CONFIG_FILE=xsltranslator.config.xml"
-) else (
-    set "CONFIG_FILE=%~1"
-)
+set "CONFIG_FILE=%~1"
+if "%CONFIG_FILE%"=="" set "CONFIG_FILE=xsltranslator.config.xml"
 
-echo Translating data to valid RDF...
 if not exist "%CONFIG_FILE%" (
-    echo ERROR: Missing configuration file: %CONFIG_FILE%
+    echo Missing config file: %CONFIG_FILE%
     exit /b 1
 )
 
 java %HARVESTER_JAVA_OPTS% -cp "%CLASSPATH%" org.vivoweb.harvester.translate.XSLTranslator -X "%CONFIG_FILE%"
-if %errorlevel% neq 0 exit /b %errorlevel%
-endlocal
-goto :eof
+exit /b %errorlevel%
 
-REM Function: Execute transfer to temp model
+
+REM ============================================================
 :execute_transfer
-REM Parameters: %1=Common config directory
-setlocal
 set "COMMON_DIR=%~1"
 
-echo Transferring RDF into temporary triple store...
+echo Transferring translated RDF...
+
 java %HARVESTER_JAVA_OPTS% -cp "%CLASSPATH%" org.vivoweb.harvester.transfer.Transfer -w INFO ^
     -s "%COMMON_DIR%\translation\translated-records.config.xml" ^
     -o "%COMMON_DIR%\harvestertransfer\harvested-data.model.xml" ^
     -d "data\harvested-data\imported-records.rdf.xml"
-if %errorlevel% neq 0 exit /b %errorlevel%
-endlocal
-goto :eof
 
-REM Function: Perform diff operations
+exit /b %errorlevel%
+
+
+REM ============================================================
 :perform_diff
-REM Parameters: %1=Common config directory
-setlocal
 set "COMMON_DIR=%~1"
 
-echo Finding Subtractions...
+echo Performing diff (subtractions)...
 java %HARVESTER_JAVA_OPTS% -cp "%CLASSPATH%" org.vivoweb.harvester.diff.Diff -X "%COMMON_DIR%\diff\diff-subtractions.config.xml"
-if %errorlevel% neq 0 exit /b %errorlevel%
+if errorlevel 1 exit /b %errorlevel%
 
-echo Finding Additions...
+echo Performing diff (additions)...
 java %HARVESTER_JAVA_OPTS% -cp "%CLASSPATH%" org.vivoweb.harvester.diff.Diff -X "%COMMON_DIR%\diff\diff-additions.config.xml"
-if %errorlevel% neq 0 exit /b %errorlevel%
-endlocal
-goto :eof
 
-REM Function: Apply changes to previous model
+exit /b %errorlevel%
+
+
+REM ============================================================
 :apply_changes_to_previous
-REM Parameters: %1=Common config directory
-setlocal
 set "COMMON_DIR=%~1"
 
-echo Applying Subtractions to Previous model...
+echo Applying subtractions to previous model...
 java %HARVESTER_JAVA_OPTS% -cp "%CLASSPATH%" org.vivoweb.harvester.transfer.Transfer -w INFO ^
     -o "%COMMON_DIR%\harvestertransfer\previous-harvest.model.xml" ^
     -r "data\vivo-subtractions.rdf.xml" -m
-if %errorlevel% neq 0 exit /b %errorlevel%
+if errorlevel 1 exit /b %errorlevel%
 
-echo Applying Additions to Previous model...
+echo Applying additions to previous model...
 java %HARVESTER_JAVA_OPTS% -cp "%CLASSPATH%" org.vivoweb.harvester.transfer.Transfer -w INFO ^
     -o "%COMMON_DIR%\harvestertransfer\previous-harvest.model.xml" ^
     -r "data\vivo-additions.rdf.xml"
-if %errorlevel% neq 0 exit /b %errorlevel%
-endlocal
-goto :eof
 
-REM Function: Apply changes to VIVO model
+exit /b %errorlevel%
+
+
+REM ============================================================
 :apply_changes_to_vivo
-REM Parameters: %1=Load method, %2=Common config directory
-setlocal
 set "LOAD_METHOD=%~1"
 set "COMMON_DIR=%~2"
 
-if "%LOAD_METHOD%"=="tdb" (
-    echo Applying Subtractions to VIVO model...
+echo Applying updates to VIVO instance using (%LOAD_METHOD%)...
+if /I "%LOAD_METHOD%"=="tdb" (
+    echo Applying subtractions (TDB mode)...
     java %HARVESTER_JAVA_OPTS% -cp "%CLASSPATH%" org.vivoweb.harvester.transfer.Transfer -w INFO ^
         -o "%COMMON_DIR%\modelupdate\vivo.model.xml" ^
         -r "data\vivo-subtractions.rdf.xml" -m
-    if %errorlevel% neq 0 exit /b %errorlevel%
+    if errorlevel 1 exit /b %errorlevel%
 
-    echo Applying Additions to VIVO model...
+    echo Applying additions (TDB mode)...
     java %HARVESTER_JAVA_OPTS% -cp "%CLASSPATH%" org.vivoweb.harvester.transfer.Transfer -w INFO ^
         -o "%COMMON_DIR%\modelupdate\vivo.model.xml" ^
         -r "data\vivo-additions.rdf.xml"
-    if %errorlevel% neq 0 exit /b %errorlevel%
 ) else (
-    echo Applying changes using SPARQL update...
+    echo Applying updates via SPARQL endpoint...
     java %HARVESTER_JAVA_OPTS% -cp "%CLASSPATH%" org.vivoweb.harvester.services.SparqlUpdate ^
         -X "%COMMON_DIR%\modelupdate\sparqlupdate.conf.xml"
-    if %errorlevel% neq 0 exit /b %errorlevel%
 )
-endlocal
-goto :eof
 
-REM Function: Count imports
+exit /b %errorlevel%
+
+
+REM ============================================================
 :count_imports
-echo Counting imported data...
-set /a PUBS=0
-set /a AUTHORS=0
-set /a AUTHORSHIPS=0
 set /a ORGS=0
+set /a PEOPLE=0
 set /a POSITIONS=0
 
 if exist data\vivo-additions.rdf.xml (
-    for /f "delims=" %%i in ('type data\vivo-additions.rdf.xml ^| find /c "oai"') do set /a PUBS=%%i
-    for /f "delims=" %%i in ('type data\vivo-additions.rdf.xml ^| find /c "http://xmlns.com/foaf/0.1/Person"') do set /a AUTHORS=%%i
-    for /f "delims=" %%i in ('type data\vivo-additions.rdf.xml ^| find /c "Authorship"') do set /a AUTHORSHIPS=%%i
-    for /f "delims=" %%i in ('type data\vivo-additions.rdf.xml ^| find /c "http://xmlns.com/foaf/0.1/Organization"') do set /a ORGS=%%i
-    for /f "delims=" %%i in ('type data\vivo-additions.rdf.xml ^| find /c "positionForPerson"') do set /a POSITIONS=%%i
+
+    for /f "delims=" %%i in ('find /c "http://xmlns.com/foaf/0.1/Organization" ^< data\vivo-additions.rdf.xml') do set /a ORGS=%%i
+    for /f "delims=" %%i in ('find /c "http://xmlns.com/foaf/0.1/Person" ^< data\vivo-additions.rdf.xml') do set /a PEOPLE=%%i
+    for /f "delims=" %%i in ('find /c "positionForPerson" ^< data\vivo-additions.rdf.xml') do set /a POSITIONS=%%i
+
+    echo Import Statistics:
+    if !ORGS! GTR 0 echo   - Organizations: !ORGS!
+    if !PEOPLE! GTR 0 echo   - People: !PEOPLE!
+    if !POSITIONS! GTR 0 echo   - Positions: !POSITIONS!
+
+) else (
+    echo No additions RDF found to count.
 )
+exit /b %errorlevel%
 
-echo Import Statistics:
-if %PUBS% GTR 0 echo   - Publications: %PUBS%
-if %AUTHORS% GTR 0 echo   - Authors: %AUTHORS%
-if %AUTHORSHIPS% GTR 0 echo   - Authorships: %AUTHORSHIPS%
-if %ORGS% GTR 0 echo   - Organizations: %ORGS%
-if %POSITIONS% GTR 0 echo   - Positions: %POSITIONS%
-goto :eof
-
-REM Function: Validate load method parameter
-:validate_load_method
-REM Parameters: %1=Load method parameter
-setlocal
-set "INPUT=%~1"
-if "%INPUT%"=="" (
-    endlocal & set "LOAD_METHOD=sparql"
-    goto :eof
-)
-
-if /I "%INPUT%"=="tdb" (
-    endlocal & set "LOAD_METHOD=tdb"
-    goto :eof
-)
-
-if /I "%INPUT%"=="sparql" (
-    endlocal & set "LOAD_METHOD=sparql"
-    goto :eof
-)
-
-echo Invalid argument: %INPUT%
-echo Usage: %~nx0 [tdb^|sparql]
-exit /b 1
