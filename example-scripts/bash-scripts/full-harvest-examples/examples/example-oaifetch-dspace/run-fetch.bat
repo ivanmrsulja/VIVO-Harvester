@@ -1,6 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
-echo [START] OpenAlex Harvest Script
+echo [START] DSpace OAI Harvest Script
 
 REM =============================================================
 REM Load method validation
@@ -16,10 +16,9 @@ REM =============================================================
 REM Configuration
 REM =============================================================
 set "COMMON_CONFIG_DIRECTORY=..\common"
-set "HARVEST_NAME=OpenAlex-Harvest"
-set "FETCH_CLASS=org.vivoweb.harvester.fetch.JSONFetch"
-set "FETCH_CONFIG=openalex-jsonfetch.config.xml"
-set "USE_JSONFETCH=true"
+set "HARVEST_NAME=DSpace-OAI-fetch"
+set "FETCH_CLASS=org.vivoweb.harvester.fetch.OAIFetch"
+set "FETCH_CONFIG=fetch.conf.xml"
 
 REM =============================================================
 REM Initialize environment
@@ -36,25 +35,18 @@ call "%~dp0..\common\sharedlibraries\harvester-common.bat" setup_logging
 call "%~dp0..\common\sharedlibraries\harvester-common.bat" clean_data
 
 REM =============================================================
-REM Fetch (JSONFetch)
+REM Fetch
 REM =============================================================
-echo [STEP 3] Fetching from OpenAlex...
-
-if not exist "%FETCH_CONFIG%" (
-    echo [ERROR] Missing configuration file: %FETCH_CONFIG%
-    exit /b 1
-)
-
-echo Executing JSONFetch...
-java %HARVESTER_JAVA_OPTS% -cp "%CLASSPATH%" %FETCH_CLASS% -X "%FETCH_CONFIG%"
-if %errorlevel% neq 0 exit /b %errorlevel%
+echo [STEP 3] Fetching from DSpace OAI...
+call "%~dp0..\common\sharedlibraries\harvester-common.bat" execute_fetch "%FETCH_CLASS%" "%FETCH_CONFIG%"
+if errorlevel 1 exit /b 1
 
 REM =============================================================
 REM Translate
 REM =============================================================
-echo [STEP 4] Translating fetched JSON to RDF...
+echo [STEP 4] Translating fetched XML to RDF...
 call "%~dp0..\common\sharedlibraries\harvester-common.bat" execute_translate
-if errorlevel 1 exit /b %errorlevel%
+if errorlevel 1 exit /b 1
 
 REM =============================================================
 REM Execute Transfer
@@ -66,50 +58,25 @@ if errorlevel 1 exit /b %errorlevel%
 REM =============================================================
 REM Perform Update (Diff)
 REM =============================================================
-echo [STEP 6] Performing diff and applying updates...
+echo [STEP 6] Performing diff (subtractions/additions)...
 call "%~dp0..\common\sharedlibraries\harvester-common.bat" perform_diff "%COMMON_CONFIG_DIRECTORY%"
 if errorlevel 1 exit /b %errorlevel%
 
+echo [STEP 7] Applying diff to previous model...
 call "%~dp0..\common\sharedlibraries\harvester-common.bat" apply_changes_to_previous "%COMMON_CONFIG_DIRECTORY%"
 if errorlevel 1 exit /b %errorlevel%
 
+echo [STEP 8] Applying diff to VIVO model...
 call "%~dp0..\common\sharedlibraries\harvester-common.bat" apply_changes_to_vivo "%LOAD_METHOD%" "%COMMON_CONFIG_DIRECTORY%"
 if errorlevel 1 exit /b %errorlevel%
 
 REM =============================================================
-REM Report - OpenAlex-specific counters
+REM Report
 REM =============================================================
-echo [STEP 7] Counting OpenAlex imports...
-
-set /a ORGS=0
-set /a PEOPLE=0
-set /a POSITIONS=0
-
-if exist data\vivo-additions.rdf.xml (
-
-    for /f "delims=" %%i in ('find /c "http://xmlns.com/foaf/0.1/Organization" ^< data\vivo-additions.rdf.xml') do set /a ORGS=%%i
-    for /f "delims=" %%i in ('find /c "http://xmlns.com/foaf/0.1/Person" ^< data\vivo-additions.rdf.xml') do set /a PEOPLE=%%i
-    for /f "delims=" %%i in ('find /c "positionForPerson" ^< data\vivo-additions.rdf.xml') do set /a POSITIONS=%%i
-
-    echo OpenAlex Import Statistics:
-    if !ORGS!     GTR 0 echo   - Organizations: !ORGS!
-    if !PEOPLE!   GTR 0 echo   - People: !PEOPLE!
-    if !POSITIONS! GTR 0 echo  - Positions: !POSITIONS!
-
-    REM ===== OpenAlex-specific keywords =====
-    for /f "delims=" %%i in ('find /c "openalex" ^< data\vivo-additions.rdf.xml') do set /a OPENALEX_RECORDS=%%i
-    for /f "delims=" %%i in ('find /c "Concept" ^< data\vivo-additions.rdf.xml') do set /a CONCEPTS=%%i
-    for /f "delims=" %%i in ('find /c "Work" ^< data\vivo-additions.rdf.xml') do set /a WORKS=%%i
-
-    if !OPENALEX_RECORDS! GTR 0 echo   - OpenAlex Records: !OPENALEX_RECORDS!
-    if !CONCEPTS!         GTR 0 echo   - Concepts: !CONCEPTS!
-    if !WORKS!            GTR 0 echo   - Works: !WORKS!
-
-) else (
-    echo No additions RDF found — cannot count OpenAlex data.
-)
+echo [STEP 9] Counting imports...
+call "%~dp0..\common\sharedlibraries\harvester-common.bat" count_imports
 
 echo.
-echo [SUCCESS] OpenAlex harvest completed successfully.
+echo [SUCCESS] DSpace harvest completed successfully.
 endlocal
 exit /b 0

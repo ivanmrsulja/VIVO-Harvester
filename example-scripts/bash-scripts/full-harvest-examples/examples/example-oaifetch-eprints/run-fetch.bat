@@ -1,6 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
-echo [START] DSpace OAI Harvest Script
+echo [START] EPrints OAI Harvest Script
 
 REM =============================================================
 REM Load method validation
@@ -16,9 +16,9 @@ REM =============================================================
 REM Configuration
 REM =============================================================
 set "COMMON_CONFIG_DIRECTORY=..\common"
-set "HARVEST_NAME=DSpace-OAI-fetch"
+set "HARVEST_NAME=EPrints-OAI-fetch"
 set "FETCH_CLASS=org.vivoweb.harvester.fetch.OAIFetch"
-set "FETCH_CONFIG=dspace-oaifetch.conf.xml"
+set "FETCH_CONFIG=fetch.conf.xml"
 
 REM =============================================================
 REM Initialize environment
@@ -37,7 +37,7 @@ call "%~dp0..\common\sharedlibraries\harvester-common.bat" clean_data
 REM =============================================================
 REM Fetch
 REM =============================================================
-echo [STEP 3] Fetching from DSpace OAI...
+echo [STEP 3] Fetching from EPrints OAI...
 call "%~dp0..\common\sharedlibraries\harvester-common.bat" execute_fetch "%FETCH_CLASS%" "%FETCH_CONFIG%"
 if errorlevel 1 exit /b 1
 
@@ -56,27 +56,25 @@ call "%~dp0..\common\sharedlibraries\harvester-common.bat" execute_transfer "%CO
 if errorlevel 1 exit /b %errorlevel%
 
 REM =============================================================
-REM Perform Update (Diff)
+REM Perform Update
 REM =============================================================
-echo [STEP 6] Performing diff (subtractions/additions)...
+echo [STEP 6] Performing diff and applying updates...
 call "%~dp0..\common\sharedlibraries\harvester-common.bat" perform_diff "%COMMON_CONFIG_DIRECTORY%"
 if errorlevel 1 exit /b %errorlevel%
 
-echo [STEP 7] Applying diff to previous model...
 call "%~dp0..\common\sharedlibraries\harvester-common.bat" apply_changes_to_previous "%COMMON_CONFIG_DIRECTORY%"
 if errorlevel 1 exit /b %errorlevel%
 
-echo [STEP 8] Applying diff to VIVO model...
 call "%~dp0..\common\sharedlibraries\harvester-common.bat" apply_changes_to_vivo "%LOAD_METHOD%" "%COMMON_CONFIG_DIRECTORY%"
 if errorlevel 1 exit /b %errorlevel%
 
 REM =============================================================
 REM Report
 REM =============================================================
-echo [STEP 9] Counting imports...
+echo [STEP 7] Counting imports...
 call "%~dp0..\common\sharedlibraries\harvester-common.bat" count_imports
 
 echo.
-echo [SUCCESS] DSpace harvest completed successfully.
+echo [SUCCESS] EPrints OAI harvest completed successfully.
 endlocal
 exit /b 0

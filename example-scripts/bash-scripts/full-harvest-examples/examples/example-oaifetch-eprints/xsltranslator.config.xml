@@ -13,7 +13,7 @@
    <Param name="output">../common/translation/translated-records.config.xml</Param>
 
    <!--DATAMAP -->
-   <Param name="xslFile">eprints-to-vivo.xsl</Param>
+   <Param name="xslFile">source-to-vivo.xsl</Param>
 
    <Param name="force">true</Param>
 

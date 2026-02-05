@@ -1,0 +1,114 @@
+{
+  "exportModules": [
+    {
+      "name": "OpenAlex",
+      "description": "Lorem ipsum dolor sit amet 0",
+      "path": "example-scripts/bash-scripts/full-harvest-examples/examples/example-jsonfetch-openalex",
+      "parameters": [
+        {
+          "name": "url",
+          "type": "text",
+          "symbol": "-u",
+          "default": "",
+          "required": true,
+          "subfields": [
+            {
+              "name": "Query filter",
+              "type": "text",
+              "symbol": "filter",
+              "default": ""
+            },
+            {
+              "name": "Records per page",
+              "type": "text",
+              "symbol": "&per-page",
+              "default": "100"
+            },
+            {
+              "name": "Cursor definition",
+              "type": "text",
+              "symbol": "&cursor",
+              "default": "*"
+            },
+            {
+              "name": "Identifier mail",
+              "type": "text",
+              "symbol": "&mailto",
+              "default": "you@example.com"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "OAI DSpace",
+      "description": "Lorem ipsum dolor sit amet",
+      "path": "example-scripts/bash-scripts/full-harvest-examples/examples/example-oaifetch-dspace",
+      "parameters": [
+        {
+          "name": "url",
+          "type": "text",
+          "symbol": "-u",
+          "default": "",
+          "required": true
+        },
+        {
+          "name": "startDate",
+          "type": "dateTime",
+          "symbol": "-s",
+          "default": "",
+          "required": true
+        },
+        {
+          "name": "endDate",
+          "type": "dateTime",
+          "symbol": "-e",
+          "default": "",
+          "required": true
+        },
+        {
+          "name": "setSpec",
+          "type": "text",
+          "symbol": "-S",
+          "default": "",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "OAI EPrints",
+      "description": "Lorem ipsum dolor sit amet 2",
+      "path": "example-scripts/bash-scripts/full-harvest-examples/examples/example-oaifetch-eprints",
+      "parameters": [
+        {
+          "name": "url",
+          "type": "text",
+          "symbol": "-u",
+          "default": "",
+          "required": true
+        },
+        {
+          "name": "startDate",
+          "type": "dateTime",
+          "symbol": "-s",
+          "default": "",
+          "required": true
+        },
+        {
+          "name": "endDate",
+          "type": "dateTime",
+          "symbol": "-e",
+          "default": "",
+          "required": true
+        },
+        {
+          "name": "setSpec",
+          "type": "text",
+          "symbol": "-S",
+          "default": "",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

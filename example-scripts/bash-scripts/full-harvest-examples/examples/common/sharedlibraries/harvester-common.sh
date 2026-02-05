@@ -50,6 +50,7 @@ clean_data() {
 execute_fetch() {
     local fetch_tool="$1"
     local config_file="$2"
+    local wordiness="${3:-INFO}"
 
     echo "Executing fetch: $fetch_tool"
     if [ ! -f "$config_file" ]; then
@@ -57,16 +58,48 @@ execute_fetch() {
         exit 1
     fi
 
-    if [ "$fetch_tool" = "harvester-jsonfetch" ]; then
-        $fetch_tool -w DEBUG -X "$config_file"
+    local cmd_args="java $HARVESTER_JAVA_OPTS \"$fetch_tool\" -w \"$wordiness\" -X \"$config_file\""
+
+    if [ "$fetch_tool" == *"JSONFetch" ]; then
+        local url="$4"
+
+        if [ -n "$url" ] && [ "$url" != "null" ]; then
+            cmd_args="$cmd_args -u \"$url\""
+        fi
+
+        echo "Running: $cmd_args"
+        eval "$cmd_args"
     else
-        java $HARVESTER_JAVA_OPTS "$fetch_tool" -X "$config_file"
+        local url="$4"
+        local start="$5"
+        local end="$6"
+        local setSpec="$7"
+
+        if [ -n "$url" ] && [ "$url" != "null" ]; then
+            cmd_args="$cmd_args -u \"$url\""
+        fi
+
+        if [ -n "$start" ] && [ "$start" != "null" ]; then
+            cmd_args="$cmd_args -s \"$start\""
+        fi
+
+        if [ -n "$end" ] && [ "$end" != "null" ]; then
+            cmd_args="$cmd_args -e \"$end\""
+        fi
+
+        if [ -n "$setSpec" ] && [ "$setSpec" != "null" ]; then
+            cmd_args="$cmd_args -S \"$setSpec\""
+        fi
+
+        echo "Running: $cmd_args"
+        eval "$cmd_args"
     fi
 }
 
 # Function to execute translate
 execute_translate() {
     local config_file="${1:-xsltranslator.config.xml}"
+    local wordiness="${2:-INFO}"
 
     echo "Executing translate"
     if [ ! -f "$config_file" ]; then
@@ -74,49 +107,55 @@ execute_translate() {
         exit 1
     fi
 
-    harvester-xsltranslator -X "$config_file"
+    harvester-xsltranslator -w "$wordiness" -X "$config_file"
 }
 
 # Function to execute transfer
 execute_transfer() {
+    local wordiness="${1:-INFO}"
+
     local source_config="$COMMON_CONFIG_DIRECTORY/translation/translated-records.config.xml"
     local dest_model="$COMMON_CONFIG_DIRECTORY/harvestertransfer/harvested-data.model.xml"
     local dump_file="data/harvested-data/imported-records.rdf.xml"
 
     echo "Executing initial transfer to triple store"
-    harvester-transfer -s "$source_config" -o "$dest_model" -d "$dump_file"
+    harvester-transfer -w "$wordiness" -s "$source_config" -o "$dest_model" -d "$dump_file"
 }
 
 # Function to perform diff operations
 perform_diff() {
+    local wordiness="${1:-INFO}"
+
     echo "Finding Subtractions"
-    harvester-diff -X "$COMMON_CONFIG_DIRECTORY/diff/diff-subtractions.config.xml"
+    harvester-diff -w "$wordiness" -X "$COMMON_CONFIG_DIRECTORY/diff/diff-subtractions.config.xml"
 
     echo "Finding Additions"
-    harvester-diff -X "$COMMON_CONFIG_DIRECTORY/diff/diff-additions.config.xml"
+    harvester-diff -w "$wordiness" -X "$COMMON_CONFIG_DIRECTORY/diff/diff-additions.config.xml"
 }
 
 # Function to apply changes to previous model
 apply_changes_to_previous() {
     local previous_model="$COMMON_CONFIG_DIRECTORY/harvestertransfer/previous-harvest.model.xml"
+    local wordiness="${1:-INFO}"
 
     echo "Applying Subtractions to Previous model"
-    harvester-transfer -o "$previous_model" -r "data/vivo-subtractions.rdf.xml" -m
+    harvester-transfer -w "$wordiness" -o "$previous_model" -r "data/vivo-subtractions.rdf.xml" -m
 
     echo "Applying Additions to Previous model"
-    harvester-transfer -o "$previous_model" -r "data/vivo-additions.rdf.xml"
+    harvester-transfer -w "$wordiness" -o "$previous_model" -r "data/vivo-additions.rdf.xml"
 }
 
 # Function to apply changes to VIVO
 apply_changes_to_vivo() {
     local vivo_model="$COMMON_CONFIG_DIRECTORY/modelupdate/vivo.model.xml"
+    local wordiness="${1:-INFO}"
 
     if [[ "$load_method" == "tdb" ]]; then
         echo "Applying Subtractions to VIVO model"
-        harvester-transfer -w info -o "$vivo_model" -r "data/vivo-subtractions.rdf.xml" -m
+        harvester-transfer -w "$wordiness" -o "$vivo_model" -r "data/vivo-subtractions.rdf.xml" -m
 
         echo "Applying Additions to VIVO model"
-        harvester-transfer -w info -o "$vivo_model" -r "data/vivo-additions.rdf.xml"
+        harvester-transfer -w "$wordiness" -o "$vivo_model" -r "data/vivo-additions.rdf.xml"
     else
         echo "Applying changes using SPARQL update"
         java $HARVESTER_JAVA_OPTS org.vivoweb.harvester.services.SparqlUpdate \
