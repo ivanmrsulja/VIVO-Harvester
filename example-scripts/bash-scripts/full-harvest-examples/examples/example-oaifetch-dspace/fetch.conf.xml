@@ -14,7 +14,7 @@
 -->
 <Param name="start">2023-05-15T00:00:00Z</Param>
 <Param name="end">2023-05-17T00:00:00Z</Param>
-<Param name="metadataPrefix">oai_dim</Param>
+<Param name="metadataPrefix">oai_dc</Param>
 <!--<Param name="setSpec">example_set</Param>-->
 <Param name="output">../common/translation/raw-records.config.xml</Param>
 <Param name="wordiness">INFO</Param>

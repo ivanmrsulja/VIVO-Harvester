@@ -6,23 +6,30 @@
       "path": "example-scripts/bash-scripts/full-harvest-examples/examples/example-jsonfetch-openalex",
       "parameters": [
         {
+          "name": "wordiness",
+          "type": "text",
+          "symbol": "-w",
+          "default": "INFO",
+          "required": true
+        },
+        {
           "name": "url",
           "type": "text",
           "symbol": "-u",
-          "default": "",
+          "default": "https://api.openalex.org/works",
           "required": true,
           "subfields": [
             {
               "name": "Query filter",
               "type": "text",
               "symbol": "filter",
-              "default": ""
+              "default": "authorships.institutions.ror:https://ror.org/04aj4c181,from_publication_date:2018-01-01,to_publication_date:2020-12-31"
             },
             {
               "name": "Records per page",
               "type": "text",
               "symbol": "&per-page",
-              "default": "100"
+              "default": "200"
             },
             {
               "name": "Cursor definition",
@@ -46,31 +53,31 @@
       "path": "example-scripts/bash-scripts/full-harvest-examples/examples/example-oaifetch-dspace",
       "parameters": [
         {
+          "name": "Wordiness",
+          "type": "text",
+          "symbol": "-w",
+          "default": "INFO",
+          "required": true
+        },
+        {
           "name": "url",
           "type": "text",
           "symbol": "-u",
-          "default": "",
+          "default": "https://dspace.mit.edu/oai/request",
           "required": true
         },
         {
           "name": "startDate",
           "type": "dateTime",
           "symbol": "-s",
-          "default": "",
+          "default": "2023-05-15T00:00:00Z",
           "required": true
         },
         {
           "name": "endDate",
           "type": "dateTime",
           "symbol": "-e",
-          "default": "",
-          "required": true
-        },
-        {
-          "name": "setSpec",
-          "type": "text",
-          "symbol": "-S",
-          "default": "",
+          "default": "2023-05-17T00:00:00Z",
           "required": true
         }
       ]
@@ -81,31 +88,38 @@
       "path": "example-scripts/bash-scripts/full-harvest-examples/examples/example-oaifetch-eprints",
       "parameters": [
         {
+          "name": "Wordiness",
+          "type": "text",
+          "symbol": "-w",
+          "default": "INFO",
+          "required": true
+        },
+        {
           "name": "url",
           "type": "text",
           "symbol": "-u",
-          "default": "",
+          "default": "https://vuir.vu.edu.au/cgi/oai2",
           "required": true
         },
         {
           "name": "startDate",
           "type": "dateTime",
           "symbol": "-s",
-          "default": "",
+          "default": "2023-05-15T00:00:00Z",
           "required": true
         },
         {
           "name": "endDate",
           "type": "dateTime",
           "symbol": "-e",
-          "default": "",
+          "default": "2023-05-17T00:00:00Z",
           "required": true
         },
         {
           "name": "setSpec",
           "type": "text",
           "symbol": "-S",
-          "default": "",
+          "default": "publications",
           "required": true
         }
       ]
