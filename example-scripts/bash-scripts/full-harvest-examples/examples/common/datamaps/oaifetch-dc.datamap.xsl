@@ -82,17 +82,29 @@
         <bibo:abstract><xsl:value-of select="normalize-space(.)"/></bibo:abstract>
     </xsl:template>
 
-    <!-- Date -->
-    <xsl:template match="dc:date">
+    <!-- Date - Only first dc:date sibling -->
+    <xsl:template match="dc:date[not(preceding-sibling::dc:date)]">
+        <xsl:variable name="dateVal" select="normalize-space(.)"/>
+
         <vivo:dateTimeValue>
             <rdf:Description rdf:about="{$baseURI}oai/{$documentId}">
-                <rdf:type rdf:resource="http://vivoweb.org/ontology/core#DateTimeValue" />
-                <vivo:dateTime rdf:datatype="http://www.w3.org/2001/XMLSchema#date">
-                    <xsl:value-of select="normalize-space(.)"/>
+                <rdf:type rdf:resource="http://vivoweb.org/ontology/core#dateTimeValue"/>
+                <vivo:dateTime rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">
+                    <xsl:choose>
+                        <xsl:when test="string-length(translate(substring($dateVal,1,4),'0123456789',''))=0">
+                            <xsl:value-of select="concat(substring($dateVal,1,4),'-01-01T00:00:00')"/>
+                        </xsl:when>
+                        <xsl:otherwise>0000-01-01T00:00:00</xsl:otherwise>
+                    </xsl:choose>
                 </vivo:dateTime>
                 <vivo:dateTimePrecision rdf:resource="http://vivoweb.org/ontology/core#yearPrecision"/>
             </rdf:Description>
         </vivo:dateTimeValue>
+    </xsl:template>
+
+    <!-- Template for subsequent dc:date elements - do nothing -->
+    <xsl:template match="dc:date[preceding-sibling::dc:date]">
+        <!-- Skip all but first dc:date -->
     </xsl:template>
 
     <!-- Type -->

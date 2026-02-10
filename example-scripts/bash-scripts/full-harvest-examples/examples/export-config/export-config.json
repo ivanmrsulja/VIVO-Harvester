@@ -7,40 +7,69 @@
       "parameters": [
         {
           "name": "wordiness",
-          "type": "text",
+          "type": "select",
           "symbol": "-w",
           "default": "INFO",
+          "required": true,
+          "options": ["DEBUG", "INFO", "WARN", "ERROR"]
+        },
+        {
+          "name": "Ingest graph",
+          "type": "graph",
+          "symbol": "--graph",
+          "default": "http://vitro.mannlib.cornell.edu/default/vitro-kb-2",
           "required": true
         },
         {
           "name": "url",
-          "type": "text",
+          "type": "url",
           "symbol": "-u",
           "default": "https://api.openalex.org/works",
           "required": true,
           "subfields": [
             {
-              "name": "Query filter",
+              "name": "ROR",
               "type": "text",
-              "symbol": "filter",
-              "default": "authorships.institutions.ror:https://ror.org/04aj4c181,from_publication_date:2018-01-01,to_publication_date:2020-12-31"
+              "group": "filter",
+              "groupSep": ",",
+              "kvSep": ":",
+              "symbol": "authorships.institutions.ror",
+              "default": "https://ror.org/04aj4c181"
+            },
+            {
+              "name": "From publication date",
+              "type": "text",
+              "group": "filter",
+              "groupSep": ",",
+              "kvSep": ":",
+              "symbol": "from_publication_date",
+              "default": "2018-01-01"
+            },
+            {
+              "name": "To publication date",
+              "type": "text",
+              "group": "filter",
+              "groupSep": ",",
+              "kvSep": ":",
+              "symbol": "to_publication_date",
+              "default": "2020-12-31"
             },
             {
               "name": "Records per page",
               "type": "text",
-              "symbol": "&per-page",
+              "symbol": "per-page",
               "default": "200"
             },
             {
               "name": "Cursor definition",
               "type": "text",
-              "symbol": "&cursor",
+              "symbol": "cursor",
               "default": "*"
             },
             {
               "name": "Identifier mail",
               "type": "text",
-              "symbol": "&mailto",
+              "symbol": "mailto",
               "default": "you@example.com"
             }
           ]
@@ -53,15 +82,23 @@
       "path": "example-scripts/bash-scripts/full-harvest-examples/examples/example-oaifetch-dspace",
       "parameters": [
         {
-          "name": "Wordiness",
-          "type": "text",
+          "name": "wordiness",
+          "type": "select",
           "symbol": "-w",
           "default": "INFO",
+          "required": true,
+          "options": ["DEBUG", "INFO", "WARN", "ERROR"]
+        },
+        {
+          "name": "Ingest graph",
+          "type": "graph",
+          "symbol": "--graph",
+          "default": "http://vitro.mannlib.cornell.edu/default/vitro-kb-2",
           "required": true
         },
         {
           "name": "url",
-          "type": "text",
+          "type": "url",
           "symbol": "-u",
           "default": "https://dspace.mit.edu/oai/request",
           "required": true
@@ -88,15 +125,23 @@
       "path": "example-scripts/bash-scripts/full-harvest-examples/examples/example-oaifetch-eprints",
       "parameters": [
         {
-          "name": "Wordiness",
-          "type": "text",
+          "name": "wordiness",
+          "type": "select",
           "symbol": "-w",
           "default": "INFO",
+          "required": true,
+          "options": ["DEBUG", "INFO", "WARN", "ERROR"]
+        },
+        {
+          "name": "Ingest graph",
+          "type": "graph",
+          "symbol": "--graph",
+          "default": "http://vitro.mannlib.cornell.edu/default/vitro-kb-2",
           "required": true
         },
         {
           "name": "url",
-          "type": "text",
+          "type": "url",
           "symbol": "-u",
           "default": "https://vuir.vu.edu.au/cgi/oai2",
           "required": true
@@ -120,6 +165,35 @@
           "type": "text",
           "symbol": "-S",
           "default": "publications",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "CSV Ingest",
+      "description": "Lorem ipsum dolor sit amet 2",
+      "path": "example-scripts/bash-scripts/full-harvest-examples/examples/example-csv",
+      "parameters": [
+        {
+          "name": "wordiness",
+          "type": "select",
+          "symbol": "-w",
+          "default": "INFO",
+          "required": true,
+          "options": ["DEBUG", "INFO", "WARN", "ERROR"]
+        },
+        {
+          "name": "Ingest graph",
+          "type": "graph",
+          "symbol": "--graph",
+          "default": "http://vitro.mannlib.cornell.edu/default/vitro-kb-2",
+          "required": true
+        },
+        {
+          "name": "File",
+          "type": "file",
+          "symbol": "-f",
+          "acceptType": ".csv,text/csv",
           "required": true
         }
       ]

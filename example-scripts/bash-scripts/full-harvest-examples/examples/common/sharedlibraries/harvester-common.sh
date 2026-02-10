@@ -158,21 +158,37 @@ apply_changes_to_vivo() {
         harvester-transfer -w "$wordiness" -o "$vivo_model" -r "data/vivo-additions.rdf.xml"
     else
         echo "Applying changes using SPARQL update"
-        java $HARVESTER_JAVA_OPTS org.vivoweb.harvester.services.SparqlUpdate \
-             -X "$COMMON_CONFIG_DIRECTORY/modelupdate/sparqlupdate.conf.xml"
+        local model="$2"
+
+        if [ -n "$model" ] && [ "$model" != "null" ]; then
+            java $HARVESTER_JAVA_OPTS org.vivoweb.harvester.services.SparqlUpdate \
+                         -X "$COMMON_CONFIG_DIRECTORY/modelupdate/sparqlupdate.conf.xml" -m "$model"
+        else
+            java $HARVESTER_JAVA_OPTS org.vivoweb.harvester.services.SparqlUpdate \
+                         -X "$COMMON_CONFIG_DIRECTORY/modelupdate/sparqlupdate.conf.xml"
+        fi
     fi
 }
 
-# Function to count imports
+# Function to print some import statistics
 count_imports() {
     local additions_file="data/vivo-additions.rdf.xml"
 
     if [ -f "$additions_file" ]; then
-        local pubs=$(grep -c "oai" "$additions_file" 2>/dev/null || echo "0")
-        local authors=$(grep -c 'http://xmlns.com/foaf/0.1/Person' "$additions_file" 2>/dev/null || echo "0")
-        local authorships=$(grep -c "Authorship" "$additions_file" 2>/dev/null || echo "0")
-        local orgs=$(grep -c 'http://xmlns.com/foaf/0.1/Organization' "$additions_file" 2>/dev/null || echo "0")
-        local positions=$(grep -c "positionForPerson" "$additions_file" 2>/dev/null || echo "0")
+        local pubs=$(grep -c "oai" "$additions_file" 2>/dev/null || echo 0)
+        pubs=${pubs//[^0-9]/}
+
+        local authors=$(grep -c 'http://xmlns.com/foaf/0.1/Person' "$additions_file" 2>/dev/null || echo 0)
+        authors=${authors//[^0-9]/}
+
+        local authorships=$(grep -c "Authorship" "$additions_file" 2>/dev/null || echo 0)
+        authorships=${authorships//[^0-9]/}
+
+        local orgs=$(grep -c 'http://xmlns.com/foaf/0.1/Organization' "$additions_file" 2>/dev/null || echo 0)
+        orgs=${orgs//[^0-9]/}
+
+        local positions=$(grep -c "positionForPerson" "$additions_file" 2>/dev/null || echo 0)
+        positions=${positions//[^0-9]/}
 
         echo "Import Statistics:"
         [ "$pubs" -gt 0 ] && echo "  - Publications: $pubs"
