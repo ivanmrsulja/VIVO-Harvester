@@ -288,14 +288,11 @@ public class JSONFetch implements RecordStreamOrigin {
      * @throws IOException error getting recrords
      */
     public void execute() throws IOException {
-        JSONParser parser = new JSONParser();
         String jsonpath = new String();
-        List<Object> nodes = null;
 
         try {
             XMLRecordOutputStream xmlRos = xmlRosBase.clone();
             xmlRos.setRso(this);
-
 
             // Get json contents as String, check for url first then a file
             String jsonString = null;
@@ -304,137 +301,88 @@ public class JSONFetch implements RecordStreamOrigin {
                 System.exit(1);
             }
             if (this.strAddress.startsWith("http") && this.strAddress.contains("cursor=")) {
-                nodes = paging();
-            } else if (this.strAddress.startsWith("http") && !this.strAddress.contains("cursor=")) {
-                log.debug("URL: " + this.strAddress);
-                jsonString = WebAide.getURLContents(this.strAddress);
+                // records are written out page by page, so only one page is ever held in memory
+                pagedExecute();
             } else {
-                jsonString = FileAide.getTextContent(this.strAddress);
-            }
-            //log.info(jsonString);
+                if (this.strAddress.startsWith("http")) {
+                    log.debug("URL: " + maskApiKey(this.strAddress));
+                    jsonString = WebAide.getURLContents(this.strAddress);
+                } else {
+                    jsonString = FileAide.getTextContent(this.strAddress);
+                }
+                //log.info(jsonString);
 
-            for (int i = 0; i < this.nodeNames.length; i++) {
-                String name = this.nodeNames[i];
-                jsonpath = this.pathStrings[i];
-                log.info("Using path: " + jsonpath);
-                JsonPath path = JsonPath.compile(jsonpath);
-                log.info("Got jsonpath: " + path.getPath());
-                if (jsonString != null) {
+                for (int i = 0; i < this.nodeNames.length; i++) {
+                    String name = this.nodeNames[i];
+                    jsonpath = this.pathStrings[i];
+                    log.info("Using path: " + jsonpath);
+                    JsonPath path = JsonPath.compile(jsonpath);
+                    log.info("Got jsonpath: " + path.getPath());
                     log.info(jsonString);
-                    nodes = path.read(jsonString);
-                }
-                log.info("name: " + name);
-                //log.info("id: "+ id);
-                log.info("num nodes: " + nodes.size());
-                int count = 0;
+                    List<Object> nodes = path.read(jsonString);
+                    log.info("name: " + name);
+                    log.info("num nodes: " + nodes.size());
 
-                Iterator itr = nodes.iterator();
-
-                while (itr.hasNext()) {
-                    Double relevantScore = 0.0;
-                    JSONObject jsonObject = (JSONObject) parser.parse(itr.next().toString());
-                    JSONArray conceptArray = (JSONArray) jsonObject.get("concepts");
-
-                    if (jsonObject.get("title") == null) {
-                        itr.remove();
-                    }
-                }
-
-                for (Object o : nodes) {
-                    JSONObject jsonObject = (JSONObject) parser.parse(o.toString());
-                    Iterator iter = jsonObject.keySet().iterator();
-                    StringBuilder sb;
-
-                    //log.info("fixedkey: "+ fixedkey);
-                    StringBuilder recID = new StringBuilder();
-                    recID.append("node_-_");
-                    recID.append(count);
-
-                    log.trace("Creating RDF for "+name+": "+recID);
-                    // Build RDF BEGIN
-                    // Header info
-                    String nodeNS = "node-" + name;
-                    sb = new StringBuilder();
-                    sb.append("<?xml version=\"1.0\"?>\n");
-                    sb.append("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"\n");
-                    sb.append("         xmlns:");
-                    sb.append(nodeNS);
-                    sb.append("=\"");
-                    sb.append(buildNodeFieldNS(name));
-                    sb.append("\"\n");
-                    sb.append("         xml:base=\"");
-                    sb.append(buildNodeRecordNS(name));
-                    sb.append("\">\n");
-
-                    // Record info BEGIN
-                    sb.append("  <rdf:Description rdf:ID=\"");
-                    sb.append(recID);
-                    sb.append("\">\n");
-
-                    // insert type value
-                    sb.append("    <rdf:type rdf:resource=\"");
-                    sb.append(buildNodeTypeNS(name));
-                    sb.append("\"/>\n");
-
-                    while (iter.hasNext()) {
-                        String key = (String) iter.next();
-                        Object val = jsonObject.get(key);
-                        if (val == null) {
-                            val = "";
-                        }
-                        //log.info("val type for key: "+key+ ": "+val.getClass().getName());
-                        String fixedkey = key
-                                .replaceAll(" |/", "_")
-                                .replaceAll("\\(|\\)", "")
-                                .replaceAll("/", "_");
-                        if (!Character.isDigit(fixedkey.charAt(0)) && !fixedkey.equals("abstract_inverted_index")) {
-                            // Confident JSON node names contain "Event:A6bdb69a-e51d-42d7-bd25-62ec3c40b7e8"
-                            if (fixedkey.contains(":"))
-                                fixedkey = fixedkey.substring(fixedkey.indexOf(":") + 1);
-                            String field = nodeNS + ":" + fixedkey;
-                            sb.append(getFieldXml(field, val, fixedkey));
-                        }
-                    }
-                    // Record info END
-                    sb.append("  </rdf:Description>\n");
-
-                    // Footer info
-                    sb.append("</rdf:RDF>");
-                    // Build RDF END
-
-                    // Write RDF to RecordHandler
-                    this.rhOutput.addRecord(name + "_" + recID, sb.toString(), this.getClass());
-                    count++;
+                    writeNodes(nodes, name, 0);
                 }
             }
         } catch(InvalidPathException e){
             log.error("Invalid JsonPath: " + jsonpath);
         } catch(Exception e){
-            log.error(e.getMessage());
-            e.printStackTrace();
-            throw new IOException(e);
+            log.error(maskApiKey(e.getMessage()));
+            log.debug("Stacktrace:", e);
+            throw new IOException(maskApiKey(e.getMessage()), e);
         }
     }
 
-    private ArrayList<Object> paging() throws IOException {
-        ArrayList<Object> listdata = new ArrayList<>();
-        String cursor, url_without_cursor;
-        int per_page,count,dbTime, pages = 0, i=1;
+    private static String maskApiKey(String text) {
+        if (text == null) {
+            return null;
+        }
+        return text.replaceAll("(?i)(api_key=)[^&\\s\"]*", "$1***");
+    }
+
+    /**
+     * Fetches a cursor paged source one page at a time, writing each page out as records before
+     * requesting the next page, so that peak memory is bound by the page size rather than by the
+     * total size of the harvest.
+     * @throws Exception error fetching or writing the records
+     */
+    private void pagedExecute() throws Exception {
+        String cursor, url_before_cursor, url_after_cursor;
+        int per_page, count, dbTime, pages = 0, i = 1;
+        long total = 0;
         String jsonString;
         JsonPath path, metapath;
         boolean displayed = false;
-        JSONArray resultPart = new JSONArray();
+        JSONArray resultPart;
 
         JSONObject jsonObject;
 
-        cursor = (String) this.strAddress.subSequence(this.strAddress.indexOf("cursor=")+7, this.strAddress.length());
-        url_without_cursor = (String) this.strAddress.subSequence(0, this.strAddress.indexOf("cursor="));
-        log.debug("URL: "+this.strAddress);
+        // split the address around the value of the cursor parameter, so that any parameters
+        // following it (mailto, api_key, ...) are kept on every subsequent page request
+        int cursorStart = this.strAddress.indexOf("cursor=") + 7;
+        int cursorEnd = this.strAddress.indexOf("&", cursorStart);
+        if (cursorEnd < 0) {
+            cursorEnd = this.strAddress.length();
+        }
+        url_before_cursor = this.strAddress.substring(0, cursorStart);
+        cursor = this.strAddress.substring(cursorStart, cursorEnd);
+        url_after_cursor = this.strAddress.substring(cursorEnd);
+        log.debug("URL: "+maskApiKey(this.strAddress));
 
         metapath = JsonPath.compile("$.meta");
 
+        log.info("Using path: " + this.pathStrings[0]);
+        path = JsonPath.compile(this.pathStrings[0]);
+        log.info("Got jsonpath: " + path.getPath());
+
+        // a running record number per node name, kept across pages so that record ids stay
+        // identical to those produced when the whole result set is collected up front
+        int[] counts = new int[this.nodeNames.length];
+
         while (cursor != null) {
-            jsonString = WebAide.getURLContents(url_without_cursor+"cursor="+cursor);
+            jsonString = WebAide.getURLContents(url_before_cursor+cursor+url_after_cursor);
             jsonObject = metapath.read(jsonString);
 
             // get next cursor till if there is a next one
@@ -455,21 +403,110 @@ public class JSONFetch implements RecordStreamOrigin {
                 displayed = true;
             }
 
-            if (cursor != null) {
-                log.debug("Page Number: "+i+"/"+pages);
-                // get data
-                path = JsonPath.compile(this.pathStrings[0]);
-                resultPart = path.read(jsonString);
-                for (int k=0; k<resultPart.size(); k++)
-                    listdata.add(resultPart.get(k).toString());
+            log.debug("Page Number: "+i+"/"+pages);
+
+            // get data -- the final page carries results as well as a null next cursor
+            List<Object> nodes = new ArrayList<Object>();
+            resultPart = path.read(jsonString);
+            for (int k=0; k<resultPart.size(); k++)
+                nodes.add(resultPart.get(k).toString());
+            total += nodes.size();
+            log.debug("num nodes on page: " + nodes.size());
+
+            for (int n = 0; n < this.nodeNames.length; n++) {
+                counts[n] = writeNodes(nodes, this.nodeNames[n], counts[n]);
             }
             i++;
         }
 
-        log.debug("Elements in array: "+listdata.size());
-        return listdata;
+        log.debug("Elements processed: "+total);
     }
 
+    /**
+     * Builds the RDF for each node and writes it to the record handler
+     * @param nodes the json nodes to write
+     * @param name the descriptive name of the json object
+     * @param startCount the record number to start at
+     * @return the record number to continue from
+     * @throws Exception error parsing a node or writing a record
+     */
+    private int writeNodes(List<Object> nodes, String name, int startCount) throws Exception {
+        JSONParser parser = new JSONParser();
+        int count = startCount;
+
+        for (Object o : nodes) {
+            JSONObject jsonObject = (JSONObject) parser.parse(o.toString());
+
+            if (jsonObject.get("title") == null) {
+                continue;
+            }
+
+            Iterator iter = jsonObject.keySet().iterator();
+            StringBuilder sb;
+
+            //log.info("fixedkey: "+ fixedkey);
+            StringBuilder recID = new StringBuilder();
+            recID.append("node_-_");
+            recID.append(count);
+
+            log.trace("Creating RDF for "+name+": "+recID);
+            // Build RDF BEGIN
+            // Header info
+            String nodeNS = "node-" + name;
+            sb = new StringBuilder();
+            sb.append("<?xml version=\"1.0\"?>\n");
+            sb.append("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"\n");
+            sb.append("         xmlns:");
+            sb.append(nodeNS);
+            sb.append("=\"");
+            sb.append(buildNodeFieldNS(name));
+            sb.append("\"\n");
+            sb.append("         xml:base=\"");
+            sb.append(buildNodeRecordNS(name));
+            sb.append("\">\n");
+
+            // Record info BEGIN
+            sb.append("  <rdf:Description rdf:ID=\"");
+            sb.append(recID);
+            sb.append("\">\n");
+
+            // insert type value
+            sb.append("    <rdf:type rdf:resource=\"");
+            sb.append(buildNodeTypeNS(name));
+            sb.append("\"/>\n");
+
+            while (iter.hasNext()) {
+                String key = (String) iter.next();
+                Object val = jsonObject.get(key);
+                if (val == null) {
+                    val = "";
+                }
+                //log.info("val type for key: "+key+ ": "+val.getClass().getName());
+                String fixedkey = key
+                        .replaceAll(" |/", "_")
+                        .replaceAll("\\(|\\)", "")
+                        .replaceAll("/", "_");
+                if (!Character.isDigit(fixedkey.charAt(0)) && !fixedkey.equals("abstract_inverted_index")) {
+                    // Confident JSON node names contain "Event:A6bdb69a-e51d-42d7-bd25-62ec3c40b7e8"
+                    if (fixedkey.contains(":"))
+                        fixedkey = fixedkey.substring(fixedkey.indexOf(":") + 1);
+                    String field = nodeNS + ":" + fixedkey;
+                    sb.append(getFieldXml(field, val, fixedkey));
+                }
+            }
+            // Record info END
+            sb.append("  </rdf:Description>\n");
+
+            // Footer info
+            sb.append("</rdf:RDF>");
+            // Build RDF END
+
+            // Write RDF to RecordHandler
+            this.rhOutput.addRecord(name + "_" + recID, sb.toString(), this.getClass());
+            count++;
+        }
+        return count;
+    }
 
     public String getFieldXml(String field, Object val, String fixedkey) {
         StringBuffer sb = new StringBuffer();

@@ -58,17 +58,17 @@ execute_fetch() {
         exit 1
     fi
 
-    local cmd_args="java $HARVESTER_JAVA_OPTS \"$fetch_tool\" -w \"$wordiness\" -X \"$config_file\""
+    local cmd=(java $HARVESTER_JAVA_OPTS "$fetch_tool" -w "$wordiness" -X "$config_file")
 
-    if [ "$fetch_tool" == *"JSONFetch" ]; then
+    if [[ "$fetch_tool" == *JSONFetch ]]; then
         local url="$4"
 
         if [ -n "$url" ] && [ "$url" != "null" ]; then
-            cmd_args="$cmd_args -u \"$url\""
+            cmd+=(-u "$url")
         fi
 
-        echo "Running: $cmd_args"
-        eval "$cmd_args"
+        echo "Running: $(printf '%s ' "${cmd[@]}" | sed -E 's/(api_key=)[^&[:space:]]*/\1***/g')"
+        "${cmd[@]}"
     else
         local url="$4"
         local start="$5"
@@ -76,23 +76,23 @@ execute_fetch() {
         local setSpec="$7"
 
         if [ -n "$url" ] && [ "$url" != "null" ]; then
-            cmd_args="$cmd_args -u \"$url\""
+            cmd+=(-u "$url")
         fi
 
         if [ -n "$start" ] && [ "$start" != "null" ]; then
-            cmd_args="$cmd_args -s \"$start\""
+            cmd+=(-s "$start")
         fi
 
         if [ -n "$end" ] && [ "$end" != "null" ]; then
-            cmd_args="$cmd_args -e \"$end\""
+            cmd+=(-e "$end")
         fi
 
         if [ -n "$setSpec" ] && [ "$setSpec" != "null" ]; then
-            cmd_args="$cmd_args -S \"$setSpec\""
+            cmd+=(-S "$setSpec")
         fi
 
-        echo "Running: $cmd_args"
-        eval "$cmd_args"
+        echo "Running: $(printf '%s ' "${cmd[@]}" | sed -E 's/(api_key=)[^&[:space:]]*/\1***/g')"
+        "${cmd[@]}"
     fi
 }
 

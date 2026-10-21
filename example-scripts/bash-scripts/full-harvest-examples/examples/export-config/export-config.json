@@ -89,6 +89,15 @@
             },
             {
               "name": {
+                "en-US": "API key",
+                "sr-Latn-RS": "API ključ"
+              },
+              "type": "text",
+              "symbol": "api_key",
+              "required": true
+            },
+            {
+              "name": {
                 "en-US": "Cursor position",
                 "sr-Latn-RS": "Pozicija kursora"
               },

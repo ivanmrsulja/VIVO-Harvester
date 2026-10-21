@@ -6,7 +6,8 @@
 -->
 <config>
     # harvesting publications from TIB – Leibniz Information Centre for Science and Technology. exchange the ROR ID to test with your institution.
-    <param name="file">https://api.openalex.org/works?filter=authorships.institutions.ror:https://ror.org/04aj4c181,from_publication_date:2018-01-01,to_publication_date:2020-12-31&amp;per-page=200&amp;cursor=*&amp;mailto=you@example.com</param>
+    # OpenAlex requires a free API key to page past the first page with cursor=; get one at https://openalex.org/settings/api
+    <param name="file">https://api.openalex.org/works?filter=authorships.institutions.ror:https://ror.org/04aj4c181,from_publication_date:2018-01-01,to_publication_date:2020-12-31&amp;per-page=200&amp;api_key=YOUR_OPENALEX_API_KEY&amp;cursor=*&amp;mailto=you@example.com</param>
 
     # harvesting of publications from the subfield "Semantic Web and Ontology Develoment", should result in ca. 9-10k publications
 <!--    <param name="file">https://api.openalex.org/works?page=1&filter=primary_topic.id:t10215,publication_year:2022-2024&amp;per-page=200&amp;cursor=*</param>-->
